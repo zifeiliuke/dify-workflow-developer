@@ -1,0 +1,568 @@
+app:
+  description: '电商资讯聚合助手 - 自动搜索、抓取和分析电商行业资讯，提供市场洞察和竞争情报'
+  icon: 🛒
+  icon_background: '#FFE4E8'
+  mode: advanced-chat
+  name: 电商资讯聚合助手
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables:
+  - description: '当前分析阶段'
+    id: conv-stage-001
+    name: analysis_stage
+    selector:
+    - conversation
+    - analysis_stage
+    value: searching
+    value_type: string
+  environment_variables:
+  - description: '搜索引擎 API Key (如 SerpAPI)'
+    id: env-search-key-001
+    name: search_api_key
+    value: your-search-api-key
+    value_type: string
+  - description: '电商数据 API Key (可选)'
+    id: env-ecom-key-002
+    name: ecommerce_api_key
+    value: your-ecommerce-api-key
+    value_type: string
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: "👋 你好！我是电商资讯聚合助手，可以帮你：\n\n🔍 搜索电商行业资讯\n📊 分析市场趋势\n🏪 监控竞品动态\n💰 追踪价格变化\n\n请输入你想了解的电商关键词（如：淘宝、京东、直播带货、跨境电商等）"
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - 淘宝直播带货趋势
+    - 京东 618 活动分析
+    - 跨境电商政策
+    - 拼多多最新策略
+    - 抖音电商发展
+    suggested_questions_after_answer:
+      enabled: true
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: code
+      id: start-to-query-builder
+      source: '1742798400001'
+      sourceHandle: source
+      target: '1742798400002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: iteration
+      id: query-to-iteration
+      source: '1742798400002'
+      sourceHandle: source
+      target: '1742798400003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: iteration
+        targetType: code
+      id: iteration-to-processor
+      source: '1742798400003'
+      sourceHandle: source
+      target: '1742798400004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: llm
+      id: processor-to-analyst
+      source: '1742798400004'
+      sourceHandle: source
+      target: '1742798400005'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: answer
+      id: analyst-to-answer
+      source: '1742798400005'
+      sourceHandle: source
+      target: '1742798400006'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '用户输入电商关键词，支持多个关键词（每行一个）'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 电商关键词
+          max_length: 512
+          options: []
+          required: true
+          type: paragraph
+          variable: keywords
+          placeholder: "示例：\n淘宝直播\n京东 618\n跨境电商"
+        - label: 分析维度
+          max_length: 48
+          options:
+          - 市场趋势
+          - 竞品分析
+          - 价格监控
+          - 政策解读
+          - 全方位分析
+          required: true
+          type: select
+          variable: analysis_type
+        - label: 时间范围
+          max_length: 24
+          options:
+          - 最近 24 小时
+          - 最近 7 天
+          - 最近 30 天
+          required: true
+          type: select
+          variable: time_range
+      height: 154
+      id: '1742798400001'
+      position:
+        x: 32
+        y: 282
+      positionAbsolute:
+        x: 32
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "def main(keywords: str, analysis_type: str, time_range: str) -> dict:\n    \"\"\"\n    生成电商资讯搜索查询\n    \"\"\"\n    # 解析关键词\n    keyword_list = [k.strip() for k in keywords.strip().split('\\n') if k.strip()]\n    \n    # 时间范围映射\n    time_map = {\n        '最近 24 小时': '24h',\n        '最近 7 天': '7d',\n        '最近 30 天': '30d'\n    }\n    time_filter = time_map.get(time_range, '7d')\n    \n    # 为每个关键词生成多个搜索查询\n    queries = []\n    for kw in keyword_list:\n        # 资讯搜索\n        queries.append(f'{kw} 最新动态 {time_filter}')\n        # 行业分析\n        if analysis_type in ['市场趋势', '全方位分析']:\n            queries.append(f'{kw} 市场趋势 分析报告')\n        # 竞品监控\n        if analysis_type in ['竞品分析', '全方位分析']:\n            queries.append(f'{kw} 竞争对手 市场份额')\n        # 价格信息\n        if analysis_type in ['价格监控', '全方位分析']:\n            queries.append(f'{kw} 价格变化 促销')\n        # 政策相关\n        if analysis_type in ['政策解读', '全方位分析']:\n            queries.append(f'{kw} 政策法规 行业政策')\n    \n    return {\n        \"queries\": queries,\n        \"keyword_count\": len(keyword_list),\n        \"query_count\": len(queries),\n        \"analysis_type\": analysis_type,\n        \"time_range\": time_range\n    }"
+        code_language: python3
+        desc: '根据用户输入生成多个搜索查询，覆盖不同分析维度'
+        outputs:
+          analysis_type:
+            children: null
+            type: string
+          keyword_count:
+            children: null
+            type: number
+          queries:
+            children: null
+            type: array[string]
+          query_count:
+            children: null
+            type: number
+          time_range:
+            children: null
+            type: string
+        selected: false
+        title: 查询生成器
+        type: code
+        variables:
+        - value_selector:
+          - '1742798400001'
+          - keywords
+          variable: keywords
+        - value_selector:
+          - '1742798400001'
+          - analysis_type
+          variable: analysis_type
+        - value_selector:
+          - '1742798400001'
+          - time_range
+          variable: time_range
+      height: 54
+      id: '1742798400002'
+      position:
+        x: 336
+        y: 282
+      positionAbsolute:
+        x: 336
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '批量搜索电商资讯，每个查询独立处理'
+        height: 450
+        iterator_selector:
+        - '1742798400002'
+        - queries
+        output_selector:
+        - '1742798400010'
+        - output
+        output_type: array[string]
+        selected: false
+        startNodeType: http-request
+        start_node_id: '1742798400007'
+        title: 批量搜索和抓取
+        type: iteration
+        width: 1400
+      height: 450
+      id: '1742798400003'
+      position:
+        x: 640
+        y: 282
+      positionAbsolute:
+        x: 640
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 1400
+      zIndex: 1
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: ''
+          type: none
+        desc: '调用搜索 API 获取电商资讯搜索结果'
+        headers: 'Content-Type: application/json'
+        isInIteration: true
+        isIterationStart: true
+        iteration_id: '1742798400003'
+        method: get
+        params: 'key={{#env.search_api_key#}}&q={{#1742798400003.item#}}&num=5'
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 500
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 30
+          max_write_timeout: 10
+        title: 搜索 API 请求
+        type: http-request
+        url: 'https://serpapi.com/search.json'
+        variables: []
+      extent: parent
+      height: 93
+      id: '1742798400007'
+      parentId: '1742798400003'
+      position:
+        x: 100
+        y: 85
+      positionAbsolute:
+        x: 740
+        y: 367
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1001
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: '='
+            id: status-check
+            value: '200'
+            varType: string
+            variable_selector:
+            - '1742798400007'
+            - status_code
+          - comparison_operator: not empty
+            id: result-check
+            varType: string
+            variable_selector:
+            - '1742798400007'
+            - body
+          logical_operator: and
+        desc: '验证搜索 API 返回状态和结果'
+        isInIteration: true
+        iteration_id: '1742798400003'
+        logical_operator: and
+        selected: false
+        title: 验证搜索结果
+        type: if-else
+      extent: parent
+      height: 126
+      id: '1742798400008'
+      parentId: '1742798400003'
+      position:
+        x: 400
+        y: 85
+      positionAbsolute:
+        x: 1040
+        y: 367
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        desc: '使用 Jina Reader 抓取电商资讯网页全文'
+        isInIteration: true
+        iteration_id: '1742798400003'
+        provider_id: jina
+        provider_name: jina
+        provider_type: builtin
+        selected: false
+        title: JinaReader 内容抓取
+        tool_configurations:
+          gather_all_images_at_the_end: 0
+          gather_all_links_at_the_end: 1
+          image_caption: 0
+          no_cache: 0
+          summary: 0
+          target_selector: article,content,main
+          wait_for_selector: null
+        tool_label: JinaReader
+        tool_name: jina_reader
+        tool_parameters:
+          url:
+            type: mixed
+            value: '{{#1742798400007.json.organic_results.0.link#}}'
+        type: tool
+      extent: parent
+      height: 272
+      id: '1742798400009'
+      parentId: '1742798400003'
+      position:
+        x: 700
+        y: 85
+      positionAbsolute:
+        x: 1340
+        y: 367
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        desc: '格式化抓取的电商资讯内容'
+        isInIteration: true
+        iteration_id: '1742798400003'
+        selected: false
+        template: "## 资讯来源：{{ query }}\n\n**内容摘要**:\n{{ text }}\n\n---\n"
+        title: 格式化资讯
+        type: template-transform
+        variables:
+        - value_selector:
+          - '1742798400009'
+          - text
+          variable: text
+        - value_selector:
+          - '1742798400003'
+          - item
+          variable: query
+      extent: parent
+      height: 54
+      id: '1742798400010'
+      parentId: '1742798400003'
+      position:
+        x: 1000
+        y: 85
+      positionAbsolute:
+        x: 1640
+        y: 367
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        code: "def main(iteration_outputs: list, analysis_type: str, time_range: str) -> dict:\n    \"\"\"\n    清洗和分类电商资讯数据\n    \"\"\"\n    import re\n    from datetime import datetime\n    \n    # 合并所有内容\n    all_content = '\\n\\n'.join(iteration_outputs)\n    \n    # 统计资讯数量\n    article_count = len([x for x in iteration_outputs if x.strip()])\n    \n    # 提取关键信息\n    urls = re.findall(r'\\*\\*链接\\*\\*: (https?://[^\\n]+)', all_content)\n    titles = re.findall(r'\\*\\*标题\\*\\*: ([^\\n]+)', all_content)\n    \n    # 生成摘要提示\n    summary_prompt = f\"\"\"\n已收集 {article_count} 篇电商资讯文章\n分析维度：{analysis_type}\n时间范围：{time_range}\n\n关键主题：\n{', '.join(titles[:10]) if titles else '待分析'}\n\n请参考以上资讯内容进行深度分析。\n\"\"\"\n    \n    return {\n        \"merged_content\": all_content,\n        \"article_count\": article_count,\n        \"unique_urls\": list(set(urls)),\n        \"titles\": titles,\n        \"summary_prompt\": summary_prompt,\n        \"analysis_type\": analysis_type,\n        \"time_range\": time_range\n    }"
+        code_language: python3
+        desc: '合并迭代结果，统计资讯数量，提取关键信息'
+        outputs:
+          analysis_type:
+            children: null
+            type: string
+          article_count:
+            children: null
+            type: number
+          merged_content:
+            children: null
+            type: string
+          summary_prompt:
+            children: null
+            type: string
+          time_range:
+            children: null
+            type: string
+          titles:
+            children: null
+            type: array[string]
+          unique_urls:
+            children: null
+            type: array[string]
+        selected: false
+        title: 数据清洗和分类
+        type: code
+        variables:
+        - value_selector:
+          - '1742798400003'
+          - output
+          variable: iteration_outputs
+        - value_selector:
+          - '1742798400002'
+          - analysis_type
+          variable: analysis_type
+        - value_selector:
+          - '1742798400002'
+          - time_range
+          variable: time_range
+      height: 54
+      id: '1742798400004'
+      position:
+        x: 2100
+        y: 282
+      positionAbsolute:
+        x: 2100
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: '深度分析电商资讯，提供市场洞察和竞争情报'
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 5
+        model:
+          completion_params:
+            temperature: 0.3
+            top_p: 0.8
+            max_tokens: 2000
+          mode: chat
+          name: qwen-max
+          provider: tongyi
+        prompt_template:
+        - edition_type: basic
+          id: prompt-ecommerce-analyst
+          role: system
+          text: "你是资深电商行业分析师，擅长从海量资讯中提取关键信息并提供深度洞察。\n\n分析要求：\n1. 准确提取关键数据和事实\n2. 识别行业趋势和模式\n3. 分析竞争格局和机会\n4. 提供可执行的建议\n5. 用专业但易懂的语言表达\n6. 使用 Markdown 格式，包含emoji增强可读性"
+        - edition_type: basic
+          id: prompt-ecommerce-user
+          role: user
+          text: "请分析以下电商资讯，生成专业的行业洞察报告：\n\n{{#1742798400004.summary_prompt#}}\n\n---\n详细资讯内容：\n{{#1742798400004.merged_content#}}\n\n---\n请按以下结构输出报告：\n\n## 🛒 电商资讯聚合分析报告\n\n### 📊 资讯概览\n- **收集文章数**: [数量]\n- **时间范围**: [范围]\n- **分析维度**: [维度]\n\n### 🔥 热点话题 TOP5\n1. [话题 1]\n2. [话题 2]\n...\n\n### 💡 核心洞察\n#### 市场趋势\n[2-3 个关键趋势分析]\n\n#### 竞争格局\n[主要玩家动态和策略]\n\n#### 消费者行为\n[消费趋势变化]\n\n### 📈 数据亮点\n- [关键数据 1]\n- [关键数据 2]\n- [关键数据 3]\n\n### ⚠️ 风险与挑战\n[潜在风险和应对建议]\n\n### 🚀 机会与建议\n#### 短期机会 (1-3 个月)\n[具体可执行建议]\n\n#### 长期策略 (6-12 个月)\n[战略性建议]\n\n### 📚 参考资料\n[列出主要来源链接，前 5 个]\n\n---\n*报告生成时间：{{#1742798400002.time_range#}}*\n*分析维度：{{#1742798400002.analysis_type#}}*"
+        selected: false
+        title: 电商洞察分析师
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1742798400005'
+      position:
+        x: 2404
+        y: 282
+      positionAbsolute:
+        x: 2404
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1742798400005.text#}}'
+        desc: '输出电商资讯分析报告'
+        selected: false
+        title: 回复分析报告
+        type: answer
+        variables: []
+      height: 103
+      id: '1742798400006'
+      position:
+        x: 2708
+        y: 282
+      positionAbsolute:
+        x: 2708
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        author: Dify Workflow Developer
+        desc: '电商资讯聚合助手 - 自动化电商情报分析'
+        height: 131
+        selected: false
+        showAuthor: true
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":"本工作流支持多维度电商分析：市场趋势、竞品分析、价格监控、政策解读。自动搜索、抓取、分析，输出专业洞察报告。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0}],"direction":"ltr","format":"","indent":0,"type":"root","version":1}}'
+        theme: blue
+        title: ''
+        type: ''
+        width: 471
+      height: 131
+      id: '1742798400999'
+      position:
+        x: 32
+        y: 450
+      positionAbsolute:
+        x: 32
+        y: 450
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 471
+    viewport:
+      x: 50
+      y: 50
+      zoom: 0.5

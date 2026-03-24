@@ -1,0 +1,19 @@
+# Git
+.git/
+*.swp
+*.swo
+*~
+
+# OpenClaw
+config.local.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+.env
+
+# IDE
+.vscode/
+.idea/
+*.log

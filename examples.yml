@@ -1,0 +1,303 @@
+# Dify Workflow Developer Skill - 示例工作流
+
+## 示例 1：简单知识库问答
+
+```yaml
+app:
+  description: '简单知识库问答工作流'
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 知识库问答
+kind: app
+version: 0.1.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: start-knowledge-target
+      source: '1723188302358'
+      target: '1723188386218'
+    - data:
+        isInIteration: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: knowledge-llm-target
+      source: '1723188386218'
+      target: llm
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: answer
+      id: llm-answer-target
+      source: llm
+      target: answer
+    nodes:
+    - data:
+        title: 开始
+        type: start
+        variables: []
+      id: '1723188302358'
+    - data:
+        title: 知识检索
+        type: knowledge-retrieval
+        dataset_ids:
+        - your-dataset-id
+        query_variable_selector:
+        - '1723188302358'
+        - sys.query
+        retrieval_mode: single
+      id: '1723188386218'
+    - data:
+        title: LLM 回答
+        type: llm
+        model:
+          name: qwen-max
+          provider: tongyi
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - role: system
+          text: |
+            你是智能助手，请根据以下信息回答用户问题：
+            
+            相关知识：{{#context#}}
+            用户问题：{{#sys.query#}}
+            
+            请提供准确、详细的回答。
+      id: llm
+    - data:
+        title: 回复
+        type: answer
+        answer: '{{#llm.text#}}'
+      id: answer
+```
+
+## 示例 2：带条件分支的 API 调用
+
+```yaml
+app:
+  description: 'API 调用工作流'
+  icon: 🌐
+  icon_background: '#E4FBCC'
+  mode: workflow
+  name: API 数据处理
+kind: app
+version: 0.1.0
+workflow:
+  environment_variables:
+  - name: api_key
+    value: your-api-key
+    value_type: string
+  graph:
+    edges:
+    - source: '1741660271061'
+      target: '1741660654730'
+    - source: '1741660654730'
+      sourceHandle: 'true'
+      target: '1741660778252'
+    - source: '1741660654730'
+      sourceHandle: 'false'
+      target: '17416607292670'
+    - source: '1741660778252'
+      target: '1741663437132'
+    - source: '1741663437132'
+      target: llm
+    - source: llm
+      target: end
+    nodes:
+    - data:
+        title: 开始
+        type: start
+        variables:
+        - label: 股票代码
+          type: text-input
+          variable: stock_code
+          required: true
+      id: '1741660271061'
+    - data:
+        title: 验证输入
+        type: if-else
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: not empty
+            variable_selector:
+            - '1741660271061'
+            - stock_code
+      id: '1741660654730'
+    - data:
+        title: 错误提示
+        type: answer
+        answer: 股票代码不能为空
+      id: '17416607292670'
+    - data:
+        title: 请求 API
+        type: http-request
+        method: get
+        url: https://api.example.com/stock/{{#1741660271061.stock_code#}}
+        headers: |
+          Authorization: Bearer {{#env.api_key#}}
+        retry_config:
+          max_retries: 3
+      id: '1741660778252'
+    - data:
+        title: 处理数据
+        type: code
+        code_language: python3
+        code: |
+          import json
+          
+          def main(api_response: str) -> dict:
+              data = json.loads(api_response)
+              return {
+                  "price": data['current_price'],
+                  "change": data['change_percent'],
+                  "volume": data['volume']
+              }
+        variables:
+        - value_selector:
+          - '1741660778252'
+          - body
+          variable: api_response
+      id: '1741663437132'
+    - data:
+        title: LLM 分析
+        type: llm
+        model:
+          name: gpt-4o-mini
+          provider: openai
+        prompt_template:
+        - role: system
+          text: |
+            分析股票数据：
+            - 当前价格：{{#1741663437132.price#}}
+            - 涨跌幅：{{#1741663437132.change#}}%
+            - 成交量：{{#1741663437132.volume#}}
+            
+            请提供简短的分析和建议。
+      id: llm
+    - data:
+        title: 结束
+        type: end
+        outputs:
+        - value_selector:
+          - llm
+          - text
+          variable: analysis
+      id: end
+```
+
+## 示例 3：迭代批量处理
+
+```yaml
+app:
+  description: '批量网页抓取'
+  icon: 🕸️
+  mode: advanced-chat
+  name: 批量内容抓取
+kind: app
+version: 0.1.0
+workflow:
+  graph:
+    edges:
+    - source: start
+      target: code-urls
+    - source: code-urls
+      target: iteration
+    - source: iteration
+      target: template
+    - source: template
+      target: llm
+    - source: llm
+      target: answer
+    nodes:
+    - data:
+        title: 开始
+        type: start
+        variables:
+        - label: 关键词列表
+          type: paragraph
+          variable: keywords
+      id: start
+    - data:
+        title: 生成搜索 URL
+        type: code
+        code_language: python3
+        code: |
+          def main(keywords: str) -> dict:
+              lines = keywords.strip().split('\n')
+              urls = [f'https://api.example.com/search?q={k}' for k in lines if k.strip()]
+              return {"urls": urls}
+      id: code-urls
+    - data:
+        title: 批量抓取
+        type: iteration
+        iterator_selector:
+        - code-urls
+        - urls
+        startNodeType: http-request
+      id: iteration
+      # 内部节点略
+    - data:
+        title: 合并结果
+        type: template-transform
+        template: |
+          {% for item in arg1 %}
+          {{ item }}
+          {% endfor %}
+      id: template
+    - data:
+        title: 总结
+        type: llm
+        model:
+          name: claude-sonnet-4-6
+          provider: anthropic
+        prompt_template:
+        - role: system
+          text: |
+            请总结以下内容：
+            {{#template.output#}}
+      id: llm
+    - data:
+        title: 回复
+        type: answer
+        answer: '{{#llm.text#}}'
+      id: answer
+```
+
+## 使用指南
+
+### 1. 导入工作流
+1. 复制 YAML 内容
+2. 在 Dify 创建新应用
+3. 选择"导入 DSL"
+4. 粘贴 YAML 并确认
+
+### 2. 配置要点
+- 替换 `your-dataset-id` 为实际数据集 ID
+- 替换 `your-api-key` 为实际 API 密钥
+- 根据需求调整模型配置
+- 修改提示词模板适配场景
+
+### 3. 测试验证
+1. 保存工作流
+2. 点击"运行"
+3. 输入测试数据
+4. 检查每个节点输出
+5. 验证最终结果
+
+---
+
+**这些示例可直接使用或作为开发参考！** 🚀

@@ -1,0 +1,488 @@
+app:
+  description: '每日 AI 资讯聚合工作流 - 自动搜索、抓取和总结 AI 相关资讯'
+  icon: 📰
+  icon_background: '#D1E0FF'
+  mode: advanced-chat
+  name: AI 资讯聚合助手
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: '搜索引擎 API Key'
+    id: env-apikey-001
+    name: search_api_key
+    value: your-search-api-key
+    value_type: string
+  - description: 'LLM API Key'
+    id: env-llmkey-002
+    name: llm_api_key
+    value: your-llm-api-key
+    value_type: string
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: '👋 你好！我是 AI 资讯聚合助手，请输入你想了解的关键词（每行一个），我会为你搜索最新资讯并总结。'
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - GPT-5
+    - AI Agent
+    - 大模型
+    - 机器学习
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: code
+      id: start-to-code
+      source: '1741660271061'
+      sourceHandle: source
+      target: '1741711639874'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: iteration
+      id: code-to-iteration
+      source: '1741711639874'
+      sourceHandle: source
+      target: '1719840515773'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: iteration
+        targetType: template-transform
+      id: iteration-to-template
+      source: '1719840515773'
+      sourceHandle: source
+      target: '1719840940932'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: template-transform
+        targetType: llm
+      id: template-to-llm
+      source: '1719840940932'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: answer
+      id: llm-to-answer
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '用户输入关键词列表，每行一个关键词'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 关键词列表
+          max_length: 1024
+          options: []
+          required: true
+          type: paragraph
+          variable: keywords
+      height: 84
+      id: '1741660271061'
+      position:
+        x: 32.5483009607201
+        y: 301
+      positionAbsolute:
+        x: 32.5483009607201
+        y: 301
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "def main(keywords: str) -> dict:\n    \"\"\"将关键词列表转换为搜索 URL 数组\"\"\"\n    lines = [k.strip() for k in keywords.strip().split('\\n') if k.strip()]\n    # 使用 DuckDuckGo 搜索示例\n    urls = [f'https://api.duckduckgo.com/?q={k.replace(\" \", \"+\")}&format=json' for k in lines]\n    return {\n        \"urls\": urls,\n        \"count\": len(urls)\n    }"
+        code_language: python3
+        desc: '将用户输入的关键词转换为搜索 API 的 URL'
+        outputs:
+          count:
+            children: null
+            type: number
+          urls:
+            children: null
+            type: array[string]
+        selected: false
+        title: 生成搜索 URL
+        type: code
+        variables:
+        - value_selector:
+          - '1741660271061'
+          - keywords
+          variable: keywords
+      height: 54
+      id: '1741711639874'
+      position:
+        x: 336
+        y: 301
+      positionAbsolute:
+        x: 336
+        y: 301
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '遍历每个搜索 URL，获取结果并抓取内容'
+        height: 377
+        iterator_selector:
+        - '1741711639874'
+        - urls
+        output_selector:
+        - '1720570101918'
+        - output
+        output_type: array[string]
+        selected: false
+        startNodeType: http-request
+        start_node_id: '1719935024281'
+        title: 批量搜索和抓取
+        type: iteration
+        width: 1267.5714285714284
+      height: 377
+      id: '1719840515773'
+      position:
+        x: 640
+        y: 301
+      positionAbsolute:
+        x: 640
+        y: 301
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 1268
+      zIndex: 1
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: ''
+          type: none
+        desc: '调用搜索 API 获取结果列表'
+        headers: ''
+        isInIteration: true
+        isIterationStart: true
+        iteration_id: '1719840515773'
+        method: get
+        params: ''
+        selected: false
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 30
+          max_write_timeout: 10
+        title: 搜索 API
+        type: http-request
+        url: '{{#1719840515773.item#}}'
+        variables: []
+      extent: parent
+      height: 93
+      id: '1719935024281'
+      parentId: '1719840515773'
+      position:
+        x: 117
+        y: 85
+      positionAbsolute:
+        x: 757
+        y: 386
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1001
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: '='
+            id: status-check
+            value: '200'
+            varType: string
+            variable_selector:
+            - '1719935024281'
+            - status_code
+          logical_operator: and
+        desc: '检查搜索 API 返回状态'
+        isInIteration: true
+        iteration_id: '1719840515773'
+        logical_operator: and
+        selected: false
+        title: 检查结果
+        type: if-else
+      extent: parent
+      height: 126
+      id: '1719935026336'
+      parentId: '1719840515773'
+      position:
+        x: 421
+        y: 85
+      positionAbsolute:
+        x: 1061
+        y: 386
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        desc: '使用 Jina Reader 抓取网页全文'
+        isInIteration: true
+        iteration_id: '1719840515773'
+        provider_id: jina
+        provider_name: jina
+        provider_type: builtin
+        selected: false
+        title: JinaReader 抓取
+        tool_configurations:
+          gather_all_images_at_the_end: 0
+          gather_all_links_at_the_end: 0
+          image_caption: 0
+          no_cache: 0
+          summary: 0
+          target_selector: null
+          wait_for_selector: null
+        tool_label: JinaReader
+        tool_name: jina_reader
+        tool_parameters:
+          url:
+            type: mixed
+            value: '{{#1719878483248.item#}}'
+        type: tool
+      extent: parent
+      height: 272
+      id: '1720364034385'
+      parentId: '1719840515773'
+      position:
+        x: 703.5714285714284
+        y: 85
+      positionAbsolute:
+        x: 1343.5714285714284
+        y: 386
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        desc: '格式化抓取的内容'
+        isInIteration: true
+        iteration_id: '1719840515773'
+        selected: false
+        template: '关键词：{{ keyword }}
+
+          内容：{{ text }}
+
+          ---
+
+          '
+        title: 格式化内容
+        type: template-transform
+        variables:
+        - value_selector:
+          - '1720364034385'
+          - text
+          variable: text
+        - value_selector:
+          - '1719840515773'
+          - item
+          variable: keyword
+      extent: parent
+      height: 54
+      id: '1720570101918'
+      parentId: '1719840515773'
+      position:
+        x: 1007.5714285714284
+        y: 85
+      positionAbsolute:
+        x: 1647.5714285714284
+        y: 386
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        desc: '合并所有迭代结果'
+        selected: false
+        template: '{% for item in arg1 %}
+          {{ item }}
+          {% endfor %}'
+        title: 合并内容
+        type: template-transform
+        variables:
+        - value_selector:
+          - '1719840515773'
+          - output
+          variable: arg1
+      height: 54
+      id: '1719840940932'
+      position:
+        x: 1967.5714285714284
+        y: 301
+      positionAbsolute:
+        x: 1967.5714285714284
+        y: 301
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: '总结所有资讯内容，生成结构化报告'
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.3
+            top_p: 0.8
+          mode: chat
+          name: qwen-max
+          provider: tongyi
+        prompt_template:
+        - edition_type: basic
+          id: prompt-system-001
+          role: system
+          text: '你是专业的 AI 资讯分析师，请根据提供的资讯内容生成结构化的总结报告。
+
+            要求：
+            1. 提取关键信息
+            2. 分析趋势和洞察
+            3. 用 Markdown 格式输出
+            4. 保持简洁专业'
+        - edition_type: basic
+          id: prompt-user-002
+          role: user
+          text: '请总结以下 AI 资讯：
+
+            {{#1719840940932.output#}}
+
+            请按以下格式输出：
+
+            ## 📊 今日 AI 资讯摘要
+
+            ### 🔥 热点话题
+            [列出 3-5 个关键话题]
+
+            ### 💡 核心洞察
+            [总结 2-3 个重要发现]
+
+            ### 🔮 趋势预测
+            [分析 1-2 个未来趋势]
+
+            ### 📚 参考资料
+            [列出来源链接]'
+        selected: false
+        title: LLM 总结
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: llm
+      position:
+        x: 2271.5714285714284
+        y: 301
+      positionAbsolute:
+        x: 2271.5714285714284
+        y: 301
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#llm.text#}}'
+        desc: '输出最终总结报告'
+        selected: false
+        title: 回复用户
+        type: answer
+        variables: []
+      height: 103
+      id: answer
+      position:
+        x: 2575.5714285714284
+        y: 301
+      positionAbsolute:
+        x: 2575.5714285714284
+        y: 301
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 124.99218234652903
+      y: 13.158016708250557
+      zoom: 0.5
